@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# Data (never commit raw/processed data)
+data/raw/
+data/processed/
+
+# Model artifacts (tracked by DVC/MLflow instead)
+artifacts/
+mlruns/
+
+# Environment
+.env
+*.env
+
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Reports
+reports/
+
+# OS
+.DS_Store
+Thumbs.db

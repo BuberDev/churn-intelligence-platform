@@ -1,0 +1,84 @@
+experiment:
+  name: churn-prediction
+  tracking_uri: http://localhost:5000
+  artifact_location: ./artifacts
+
+data:
+  raw_path: data/raw/customers.csv
+  processed_path: data/processed/
+  test_size: 0.2
+  val_size: 0.1
+  random_state: 42
+  target_column: churned
+  id_column: customer_id
+
+models:
+  logistic_regression:
+    enabled: true
+    params:
+      C: 1.0
+      max_iter: 1000
+      class_weight: balanced
+      solver: lbfgs
+
+  random_forest:
+    enabled: true
+    params:
+      n_estimators: 300
+      max_depth: 12
+      min_samples_split: 5
+      min_samples_leaf: 2
+      class_weight: balanced
+      n_jobs: -1
+      random_state: 42
+    tuning:
+      enabled: true
+      n_trials: 50
+      metric: roc_auc
+
+  xgboost:
+    enabled: true
+    params:
+      n_estimators: 500
+      max_depth: 6
+      learning_rate: 0.05
+      subsample: 0.8
+      colsample_bytree: 0.8
+      scale_pos_weight: 3
+      eval_metric: auc
+      early_stopping_rounds: 30
+    tuning:
+      enabled: true
+      n_trials: 100
+      metric: roc_auc
+
+  neural_network:
+    enabled: true
+    params:
+      hidden_dims: [256, 128, 64]
+      dropout: 0.3
+      batch_norm: true
+      learning_rate: 0.001
+      batch_size: 512
+      max_epochs: 100
+      patience: 10
+
+  tabular_transformer:
+    enabled: true
+    params:
+      d_model: 64
+      n_heads: 8
+      n_layers: 3
+      dropout: 0.1
+      learning_rate: 0.0005
+      batch_size: 256
+      max_epochs: 80
+      patience: 15
+
+evaluation:
+  primary_metric: roc_auc
+  threshold_optimization: true
+  generate_shap: true
+  business_metrics:
+    cost_false_negative: 500   # revenue lost per missed churner (PLN)
+    cost_false_positive: 50    # cost of retention action (PLN)

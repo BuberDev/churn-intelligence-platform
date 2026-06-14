@@ -1,0 +1,144 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "churn-intelligence-platform"
+version = "1.0.0"
+description = "Enterprise MLOps platform for customer churn prediction"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+dependencies = [
+    # Core data science
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scikit-learn>=1.4",
+    "xgboost>=2.0",
+    "lightgbm>=4.1",
+    # Deep learning
+    "torch>=2.2",
+    "transformers>=4.38",
+    # MLOps
+    "mlflow>=2.11",
+    "dvc>=3.40",
+    # API
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.28",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    # Database
+    "sqlalchemy>=2.0",
+    "psycopg2-binary>=2.9",
+    "pymongo>=4.6",
+    "redis>=5.0",
+    # Visualization
+    "plotly>=5.19",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    # Explainability
+    "shap>=0.44",
+    # Utilities
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "rich>=13.7",
+    "typer>=0.9",
+    "loguru>=0.7",
+    "dask[dataframe]>=2024.1",
+    "optuna>=3.5",
+    "joblib>=1.3",
+    "streamlit>=1.32",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "ruff>=0.3",
+    "mypy>=1.9",
+    "types-PyYAML",
+    "factory-boy>=3.3",
+]
+
+[project.scripts]
+churn-train = "scripts.train:app"
+churn-evaluate = "scripts.evaluate:app"
+churn-serve = "src.api.main:start"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "scripts*"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "ANN", "S", "B", "A", "C4", "PT", "RUF"]
+ignore = [
+    "S101",   # assert is fine in tests
+    "N803",   # ML convention: uppercase X for feature matrices
+    "N806",   # ML convention: uppercase X, C in function bodies
+    "N802",   # ML convention: uppercase method names
+    "B008",   # typer.Option() in defaults is documented typer pattern
+    "B905",   # zip strict= not always needed
+    "ANN001", # missing argument annotation — too noisy for scripts
+    "ANN002",
+    "ANN003",
+    "ANN201",
+    "ANN202",
+    "ANN204",
+    "ANN401", # Any is fine in internal helpers
+    "RUF002", # ambiguous unicode in docstrings (em-dash)
+    "RUF003", # ambiguous unicode in comments
+    "RUF012", # ClassVar on ML config constants is unnecessary strictness
+    "PT018",  # composite assert is fine in ML tests
+    "PT006",  # parametrize types
+    "E501",   # line length — handled by formatter
+    "RUF046", # int(len(...)) cast — needed for mypy/torch Dataset typing
+]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+# Strict mode subset — excludes rules that cause false positives with numpy/torch/redis stubs
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+no_implicit_optional = true
+# numpy, torch, redis stubs are incomplete — relax return/generic checks
+warn_return_any = false
+disallow_any_generics = false
+
+[[tool.mypy.overrides]]
+module = ["src.visualization.dashboard"]
+ignore_errors = true  # streamlit/plotly have incomplete stubs
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = [
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--cov-fail-under=70",
+    "--cov-config=pyproject.toml",
+]
+
+[tool.coverage.run]
+omit = [
+    # Require external services (MLflow, Redis, model artifacts) — tested via integration tests
+    "src/pipeline/training.py",
+    "src/pipeline/inference.py",
+    "src/evaluation/explainability.py",
+    # Require UI runtime (Streamlit, browser) — not unit-testable
+    "src/visualization/dashboard.py",
+    "src/visualization/plots.py",
+    # Data loaders for external DBs — tested via mocks in other layers
+    "src/data/loader.py",
+]

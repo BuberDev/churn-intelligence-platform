@@ -1,0 +1,68 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://churn:churn@postgres:5432/churn_db
+      - MONGO_URL=mongodb://mongo:27017/churn
+      - REDIS_URL=redis://redis:6379/0
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      - postgres
+      - mongo
+      - redis
+      - mlflow
+    volumes:
+      - ./configs:/app/configs
+      - ./data:/app/data
+      - model_artifacts:/app/artifacts
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.11.3
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=postgresql://churn:churn@postgres:5432/mlflow_db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+    depends_on:
+      - postgres
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://churn:churn@postgres:5432/mlflow_db
+      --default-artifact-root /mlflow/artifacts
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: churn
+      POSTGRES_PASSWORD: churn
+      POSTGRES_MULTIPLE_DATABASES: churn_db,mlflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+  mongo_data:
+  mlflow_artifacts:
+  model_artifacts:
